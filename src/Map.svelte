@@ -2,8 +2,11 @@
 	import { onMount } from "svelte";
 	import { mapboxgl } from "../mapboxgl";
 	import * as turf from "@turf/turf";
+	import { writable } from "svelte/store";
 
 	export let geoJSONData;
+
+	let markers = writable([]);
 
 	onMount(() => {
 		let bounds = turf.bbox(geoJSONData);
@@ -67,14 +70,21 @@
 		map.on("click", (e) => {
 			if (e.originalEvent.target.closest(".mapboxgl-marker")) {
 				e.originalEvent.target.closest(".mapboxgl-marker").remove();
-			} else {
+				// console.log(e.originalEvent.target.closest(".mapboxgl-marker"));
+				$markers = $markers.filter(
+					(marker) =>
+						marker._element.classList !== e.originalEvent.target.closest(".mapboxgl-marker").classList
+				);
+			} else if ($markers.length < 2) {
 				const marker = new mapboxgl.Marker({
 					color: "#green",
 					draggable: true,
 				})
 					.setLngLat([e.lngLat.lng, e.lngLat.lat])
 					.addTo(map);
-				// console.log("dblclick", e.originalEvent.target.closest(".mapboxgl-marker"), "-", marker);
+				marker._element.classList.add(($markers.length + 1) % 2 === 0 ? "end" : "start");
+				$markers = [...$markers, marker];
+				// console.log("dblclick", marker._element);
 			}
 		});
 	});
